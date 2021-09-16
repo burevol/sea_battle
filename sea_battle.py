@@ -55,7 +55,7 @@ class Board:
     def print_board(self):
         print(' |1|2|3|4|5|6|')
         for i, row in enumerate(self._board):
-            print(f'{i+1}|{"|".join(row)}|')
+            print(f'{i + 1}|{"|".join(row)}|')
 
     @staticmethod
     def out(dot):
@@ -81,11 +81,19 @@ class Player:
 
 
 class AI(Player):
-    pass
+    def ask(self):
+        pass
+
+    def move(self):
+        pass
 
 
 class User(Player):
-    pass
+    def ask(self):
+        pass
+
+    def move(self):
+        pass
 
 
 class Game:
