@@ -2,7 +2,7 @@ from random import randrange, choice
 
 HORIZONTAL = 1
 VERTICAL = 2
-CLEAR = '0'
+CLEAR = 'О'
 SHIP = '▄'
 HIT = 'X'
 MISS = 'T'
@@ -44,8 +44,8 @@ class Dot:
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
 
-    def __str__(self):
-        return f'x:{self.x}, y:{self.y}'
+    def __repr__(self):
+        return f'({self.x + 1}, {self.y + 1})'  # транслируем в систему координат доски
 
 
 class Ship:
@@ -68,10 +68,7 @@ class Ship:
         if dot not in self.dots:
             raise WrongPointToShipException('Критическая ошибка при расчете координат')
         self.lives -= 1
-        if not self.lives:
-            return False
-        else:
-            return True
+        return True if not self.lives else False
 
 
 class Board:
@@ -125,10 +122,7 @@ class Board:
 
     @staticmethod
     def out(dot):
-        if 0 <= dot.x <= 5 and 0 <= dot.y <= 5:
-            return False
-        else:
-            return True
+        return not (0 <= dot.x <= 5 and 0 <= dot.y <= 5)
 
     def shot(self, dot):
         if Board.out(dot):
@@ -140,7 +134,7 @@ class Board:
                 self._board[dot.x][dot.y] = HIT
                 print("Попадание!")
                 try:
-                    if not map_ship.hit(dot):
+                    if map_ship.hit(dot):
                         self.ships_active -= 1
                         print('Корабль уничтожен!')
                 except WrongPointToShipException as exc:
@@ -180,7 +174,6 @@ class Player:
 
 
 class AI(Player):
-
     def ask(self):
         can_exit = False
         target = None
@@ -190,13 +183,14 @@ class AI(Player):
             if target not in self.turns:
                 can_exit = True
 
-        print(f'Ход компьютера: {target.x + 1} {target.y + 1}')
+        print(f'Ход компьютера: {target}')
         self.turns.append(target)
         return target
 
 
 class User(Player):
     def ask(self):
+        self.draw_boards()
         s = input("Введите координаты хода:")
         if s == 'q':
             raise QuitException
@@ -211,6 +205,12 @@ class User(Player):
             raise WrongInputException()
         return dot
 
+    def draw_boards(self):
+        print("Ваше игровое поле:")
+        self.my_board.print_board()
+        print('Игровое поле компьютера:')
+        self.enemy_board.print_board()
+
 
 class Game:
     def __init__(self):
@@ -223,12 +223,10 @@ class Game:
     def random_board(hidden):
         while True:
             generated_board = Board(hidden)
+            len_ships = [3, 2, 2, 1, 1, 1, 1]
             try:
-                Game.add_ship_to_board(generated_board, 3)
-                for _ in range(2):
-                    Game.add_ship_to_board(generated_board, 2)
-                for _ in range(4):
-                    Game.add_ship_to_board(generated_board, 1)
+                for length in len_ships:
+                    Game.add_ship_to_board(generated_board, length)
 
             except CannotPlaceShipException:
                 pass
@@ -262,29 +260,18 @@ class Game:
 
     def loop(self):
         win = False
+        players = [self.player, self.ai]
+        name_players = ["Игрок", "Компьютер"]
+        current_player = 0
         while not win:
-            print('Ход игрока.')
-            self.draw_boards()
             while True:
-                result = self.player.move()
-                if self.ai_board.ships_active == 0:
-                    raise WinException("Игрок победил!")
+                result = players[current_player].move()
+                if players[current_player].enemy_board.ships_active == 0:
+                    raise WinException(f"{name_players[current_player]} победил!")
                 if not result:
                     break
+            current_player = 1 if current_player == 0 else 0
 
-            print('Ход компьютера')
-            while True:
-                result = self.ai.move()
-                if self.player_board.ships_active == 0:
-                    raise WinException("Компьютер победил!")
-                if not result:
-                    break
-
-    def draw_boards(self):
-        print("Ваше игровое поле:")
-        self.player_board.print_board()
-        print('Игровое поле компьютера:')
-        self.ai_board.print_board()
 
     def start(self):
         self.greet()
